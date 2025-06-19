@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    environment {
+        IMAGE_NAME = "delivery-ms"
+    }
     stages{
         stage('Github clone repo') {
             steps {
@@ -18,17 +21,17 @@ pipeline {
         }
         stage('Docker Create Image') {
             steps {
-                script {
-                    dockerImage = docker.build("delivery-ms")
-                }
-            }
-        }
-        stage('Docker Push Image') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        dockerImage.push()
-                    }
+                sh "docker logout"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
+                )]){
+                    sh '''
+                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                        docker build -t $DOCKERHUB_USER/${IMAGE_NAME}:$BUILD_NUMBER ./Dockerfile
+                        docker push $DOCKERHUB_USER/${IMAGE_NAME}:$BUILD_NUMBER
+                    '''
                 }
             }
         }
