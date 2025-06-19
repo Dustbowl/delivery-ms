@@ -18,12 +18,18 @@ pipeline {
         }
         stage('Docker Create Image') {
             steps {
-
+                script {
+                    dockerImage = docker.build("delivery-ms")
+                }
             }
         }
         stage('Docker Push Image') {
             steps {
-
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        dockerImage.push()
+                    }
+                }
             }
         }
     }
